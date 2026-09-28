@@ -58,6 +58,13 @@ def make_gbm(loss: str, learning_rate: float, max_leaf_nodes: int, min_samples_l
     )
 
 
+def make_gbm_quantile(quantile: float, learning_rate: float, max_leaf_nodes: int,
+                      min_samples_leaf: int, **_):
+    """Quantile-loss variant of make_gbm, reusing the tuned tree hyperparameters."""
+    model = make_gbm("absolute_error", learning_rate, max_leaf_nodes, min_samples_leaf)
+    return model.set_params(loss="quantile", quantile=quantile)
+
+
 def grid_search(make_model, grid: dict, X_train, y_train, X_val, y_val):
     """Fit one model per grid point on train, score on val, return the best.
 

@@ -2,6 +2,8 @@
 
 Usage: python -m src.run_experiments
 """
+import json
+
 import pandas as pd
 
 from src import config
@@ -52,6 +54,12 @@ def main():
     summary = pd.DataFrame(rows)
     summary.to_csv(config.RESULTS_DIR / "summary_val.csv", index=False)
     pd.concat(tuning_logs).to_csv(config.RESULTS_DIR / "tuning_log.csv", index=False)
+
+    best = {}
+    for r in rows:
+        best.setdefault(r["project"], {})[r["model"]] = r["best_params"]
+    with open(config.RESULTS_DIR / "best_params.json", "w") as f:
+        json.dump(best, f, indent=2)
 
     pivot = summary.pivot(index="project", columns="model", values="val_mae")
     print(summary.to_string(index=False), "\n\nVal MAE:\n", pivot)
