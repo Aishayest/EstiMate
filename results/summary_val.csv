@@ -1,0 +1,13 @@
+project,model,val_mae,val_mdae,best_params
+mesos,median_train,1.339,1.0,{}
+mesos,tfidf_ridge,1.251,1.032,"{'ngram_max': 1, 'alpha': 3.0, 'log_target': True}"
+mesos,minilm_hgb,1.297,1.074,"{'loss': 'absolute_error', 'learning_rate': 0.03, 'max_leaf_nodes': 15, 'min_samples_leaf': 50}"
+springxd,median_train,1.793,2.0,{}
+springxd,tfidf_ridge,1.697,1.47,"{'ngram_max': 1, 'alpha': 3.0, 'log_target': True}"
+springxd,minilm_hgb,1.667,1.454,"{'loss': 'absolute_error', 'learning_rate': 0.1, 'max_leaf_nodes': 31, 'min_samples_leaf': 50}"
+appceleratorstudio,median_train,1.375,2.0,{}
+appceleratorstudio,tfidf_ridge,1.502,1.984,"{'ngram_max': 2, 'alpha': 30.0, 'log_target': True}"
+appceleratorstudio,minilm_hgb,1.454,2.0,"{'loss': 'absolute_error', 'learning_rate': 0.03, 'max_leaf_nodes': 15, 'min_samples_leaf': 20}"
+talenddataquality,median_train,3.619,3.0,{}
+talenddataquality,tfidf_ridge,3.251,2.249,"{'ngram_max': 2, 'alpha': 1.0, 'log_target': True}"
+talenddataquality,minilm_hgb,3.394,2.697,"{'loss': 'absolute_error', 'learning_rate': 0.03, 'max_leaf_nodes': 15, 'min_samples_leaf': 20}"
