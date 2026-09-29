@@ -1,0 +1,13 @@
+project,model,test_mae,mae_ci_low,mae_ci_high,test_mdae,n_test
+mesos,median_train,1.22,1.092,1.348,1.0,336
+mesos,tfidf_ridge,1.138,1.02,1.261,0.901,336
+mesos,minilm_hgb,1.121,1.013,1.237,0.919,336
+springxd,median_train,1.715,1.598,1.837,2.0,706
+springxd,tfidf_ridge,1.602,1.509,1.706,1.312,706
+springxd,minilm_hgb,1.629,1.524,1.736,1.364,706
+appceleratorstudio,median_train,1.301,1.187,1.421,0.0,584
+appceleratorstudio,tfidf_ridge,1.42,1.315,1.518,0.576,584
+appceleratorstudio,minilm_hgb,1.401,1.279,1.529,2.0,584
+talenddataquality,median_train,3.314,3.037,3.631,3.0,271
+talenddataquality,tfidf_ridge,3.285,3.013,3.585,3.005,271
+talenddataquality,minilm_hgb,3.966,3.693,4.253,3.967,271
