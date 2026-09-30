@@ -126,6 +126,7 @@ if r.coverage < level - 0.05:
     )
 st.caption(
     f"Trained on {entry['n_train']} issues, calibrated on {entry['n_cal']}. "
-    "Point accuracy from text alone is modest (about 5–8% better MAE than always "
-    "predicting the training median), so treat the interval as the main output."
+    "Point accuracy from text alone is modest: on test, MAE is at most ~7% better than "
+    "always predicting the training median, and worse on one project. Treat the "
+    "interval as the main output."
 )
