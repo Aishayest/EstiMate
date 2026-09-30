@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EstiMate — Method</title>
+<meta name="description" content="How EstiMate was built and evaluated: time-based split, split conformal intervals, one-shot test evaluation.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<script src="assets/theme.js"></script>
+</head>
+<body class="method">
+
+<div class="topbar">
+  <span>Story point estimator / v0.1</span>
+  <span class="topbar-right">
+    <span class="topbar-model">TF-IDF + Ridge · split conformal · runs in your browser</span>
+    <button type="button" class="theme-toggle" data-theme-toggle>Dark</button>
+  </span>
+</div>
+
+<header class="site-header">
+  <a class="wordmark" href="index.html">EstiMate</a>
+  <button type="button" class="menu-button" aria-label="Open menu" aria-expanded="false" aria-controls="nav" data-menu>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 7h18"/><path d="M3 12h18"/><path d="M3 17h18"/></svg>
+  </button>
+  <nav class="nav" id="nav" aria-label="Main">
+    <a href="index.html">[01] Estimate</a>
+    <a href="method.html" aria-current="page">[02] Method</a>
+    <a href="https://github.com/Aishayest/EstiMate">GitHub ↗</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-main">
+    <h1>Not record accuracy. An honest experiment.</h1>
+    <p>No leakage, a split by time, a test set touched once at the very end, and results that reproduce with one command.</p>
+  </div>
+  <div class="hero-side reproduce">
+    <span class="label">Reproduce</span>
+    <code>python -m src.pipeline</code>
+    <span>~10 min · same numbers every run</span>
+  </div>
+</section>
+
+<main>
+<section class="section" aria-labelledby="pipe-h">
+  <h2 class="stats-title" id="pipe-h">01 — Pipeline</h2>
+  <ol class="pipeline">
+    <li>
+      <span class="step">01 →</span>
+      <strong>Deep-SE issues</strong>
+      <span>4 open-source Jira projects, <span data-n-issues>~9.5k</span> issues with story points.</span>
+    </li>
+    <li>
+      <span class="step">02 →</span>
+      <strong>Split by time</strong>
+      <span>Train on the oldest 60%, calibrate on the next 20%, test on the newest 20%.</span>
+    </li>
+    <li>
+      <span class="step">03 →</span>
+      <strong>Text to vector</strong>
+      <span>TF-IDF word weights. MiniLM sentence embeddings were tested as an alternative.</span>
+    </li>
+    <li>
+      <span class="step">04 →</span>
+      <strong>Regress SP</strong>
+      <span>Ridge on TF-IDF; gradient boosting on MiniLM for comparison. Tuned on validation only.</span>
+    </li>
+    <li class="hot">
+      <span class="step">05 →</span>
+      <strong>Conformal calibration</strong>
+      <span>Measure errors on the calibration slice, pick the margin q.</span>
+    </li>
+    <li class="end">
+      <span class="step">06 ■</span>
+      <strong>Test, once</strong>
+      <span>Coverage and width with bootstrap CIs, at the very end.</span>
+    </li>
+  </ol>
+</section>
+
+<section class="section split-12" aria-labelledby="conf-h">
+  <div class="left">
+    <h2 class="stats-title" id="conf-h" style="margin:0">02 — The interval</h2>
+    <p class="lede">Look at how wrong the model was on issues it never trained on. Take a margin wide enough to cover the chosen share of them.</p>
+    <p class="body">Split conformal prediction. The guarantee is mathematical but conditional: it holds while new issues are exchangeable with the calibration ones. Section 04 shows what happens when they are not.</p>
+  </div>
+  <div class="right code-card">
+    <div class="label">conformal.py</div>
+<pre><span class="c"># errors on n calibration issues</span>
+r_i = |y_i − ŷ_i|
+
+<span class="c"># margin for level 1 − α</span>
+q   = r_(k),   k = ⌈(n + 1)(1 − α)⌉
+
+<span class="c"># interval for a new issue</span>
+[ max(1, ŷ − q),  ŷ + q ]
+
+<span class="c"># story points are integers: round inward,</span>
+<span class="c"># coverage is unchanged</span>
+[ ⌈lo⌉, ⌊hi⌋ ]</pre>
+  </div>
+</section>
+
+<section class="section" aria-labelledby="res-h">
+  <div class="section-head">
+    <h2 id="res-h">03 — Test results</h2>
+    <span>TF-IDF + Ridge, split conformal · CI = bootstrap 95%</span>
+  </div>
+  <div class="table-scroll">
+    <table class="table results">
+      <thead>
+        <tr>
+          <th scope="col">Project</th>
+          <th scope="col">Test n</th>
+          <th scope="col">MAE</th>
+          <th scope="col">Median baseline</th>
+          <th scope="col">Coverage @90</th>
+          <th scope="col">Mean width</th>
+        </tr>
+      </thead>
+      <tbody id="results"></tbody>
+    </table>
+  </div>
+  <p class="body" id="results-note" style="margin-top:16px;max-width:820px"></p>
+</section>
+
+<section class="section" aria-labelledby="fig-h">
+  <h2 class="stats-title" id="fig-h">Figures</h2>
+  <div class="figures">
+    <figure>
+      <div class="frame"><img src="figures/calibration.png" alt="Empirical versus target coverage on test for four projects and three methods at 50, 80 and 90 percent" loading="lazy"></div>
+      <figcaption><span>Fig. 1</span><span>Empirical vs target coverage on test. The dashed diagonal is perfect calibration; talenddataquality falls far below it at 50%.</span></figcaption>
+    </figure>
+    <figure>
+      <div class="frame"><img class="narrow" src="figures/interval_width.png" alt="Mean width of 90 percent intervals per project and method, with coverage" loading="lazy"></div>
+      <figcaption><span>Fig. 2</span><span>Mean width of 90% intervals on test, coverage in brackets. Narrower is better at equal coverage.</span></figcaption>
+    </figure>
+    <figure>
+      <div class="frame"><img src="figures/coverage_over_time.png" alt="Coverage of 90 percent intervals across four chronological quarters of the test period" loading="lazy"></div>
+      <figcaption><span>Fig. 3</span><span>Coverage of 90% intervals across chronological quarters of the test period.</span></figcaption>
+    </figure>
+    <figure>
+      <div class="frame"><img src="figures/example_intervals.png" alt="Fifty and ninety percent intervals for the 40 most recent mesos test issues, with true story points" loading="lazy"></div>
+      <figcaption><span>Fig. 4</span><span>The 40 most recent mesos test issues: 50% and 90% intervals against the true estimate.</span></figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="section drift-block" aria-labelledby="drift-h">
+  <div class="drift-left">
+    <span class="eyebrow">04 — Where the guarantee stops</span>
+    <span class="big" data-drift="medians">—</span>
+    <span class="mono">typical SP, <span data-drift="name"></span>, training → test period</span>
+  </div>
+  <div class="drift-right">
+    <h2 id="drift-h">The team started estimating smaller. The intervals didn't know.</h2>
+    <p data-drift="body">Intervals calibrated on older issues sat too high for new ones.</p>
+    <p>The method did what it promises. The assumption behind it, that the future looks like the past, did not hold.</p>
+  </div>
+</section>
+
+<section class="section split-12" aria-labelledby="rep-h">
+  <div class="left">
+    <h2 class="stats-title" id="rep-h" style="margin:0">05 — Reproduce</h2>
+    <p class="body">One command goes from downloading the data to the figures, and also exports the files this page loads.</p>
+    <a class="repo-link" href="https://github.com/Aishayest/EstiMate">Open repository <span aria-hidden="true">↗</span></a>
+  </div>
+<pre class="right terminal"><span class="p">$</span> git clone https://github.com/Aishayest/EstiMate
+<span class="p">$</span> cd EstiMate && python -m venv .venv
+<span class="p">$</span> .venv/bin/pip install -r requirements.txt
+<span class="p">$</span> .venv/bin/python -m src.pipeline</pre>
+</section>
+</main>
+
+<footer class="site-footer">
+  <span>Data: Deep-SE (Choetkiertikul et al., 2018) · code: github.com/Aishayest/EstiMate</span>
+  <a href="index.html">← Try the estimator</a>
+</footer>
+
+<script src="assets/common.js"></script>
+<script src="assets/method.js"></script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EstiMate — Estimate</title>
+<meta name="description" content="Story points from issue text, with a conformal prediction interval checked on held-out issues.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<script src="assets/theme.js"></script>
+</head>
+<body>
+
+<div class="topbar">
+  <span>Story point estimator / v0.1</span>
+  <span class="topbar-right">
+    <span class="topbar-model">TF-IDF + Ridge · split conformal · runs in your browser</span>
+    <button type="button" class="theme-toggle" data-theme-toggle>Dark</button>
+  </span>
+</div>
+
+<header class="site-header">
+  <a class="wordmark" href="index.html">EstiMate</a>
+  <button type="button" class="menu-button" aria-label="Open menu" aria-expanded="false" aria-controls="nav" data-menu>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 7h18"/><path d="M3 12h18"/><path d="M3 17h18"/></svg>
+  </button>
+  <nav class="nav" id="nav" aria-label="Main">
+    <a href="index.html" aria-current="page">[01] Estimate</a>
+    <a href="method.html">[02] Method</a>
+    <a href="https://github.com/Aishayest/EstiMate">GitHub ↗</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-main">
+    <h1>Story points from the issue text. With an interval you can check.</h1>
+    <p>The model says how many story points an issue is likely to take, and how wide the honest margin around that guess is.</p>
+    <p class="hero-meta">Deep-SE · <span data-n-issues>~9.5k</span> issues · 4 projects · split by time · test used once</p>
+  </div>
+  <dl class="hero-side facts-list">
+    <div><dt>Data</dt><dd>Deep-SE, 2018</dd></div>
+    <div><dt>Issues</dt><dd data-n-issues>~9,500</dd></div>
+    <div><dt>Projects</dt><dd>4</dd></div>
+    <div><dt>Split</dt><dd>by time</dd></div>
+    <div><dt>Test set</dt><dd>used once</dd></div>
+  </dl>
+</section>
+
+<main class="panel">
+  <section class="pane" aria-labelledby="in-h">
+    <div class="pane-head">
+      <h2 id="in-h">01 — Input</h2>
+      <span>text → TF-IDF → Ridge</span>
+    </div>
+    <div class="pane-body">
+      <fieldset>
+        <legend class="label">Project · calibrated separately</legend>
+        <div class="chips" id="projects"></div>
+      </fieldset>
+      <div class="field">
+        <label class="label" for="task">Issue title and description</label>
+        <textarea id="task" placeholder="Paste an issue: title on the first line, description below."></textarea>
+      </div>
+      <div>
+        <div class="examples-head">
+          <span class="label" id="examples-label">Or load a test issue</span>
+          <button type="button" class="link-button" id="shuffle">↻ Other issues</button>
+        </div>
+        <div class="examples" id="examples" role="group" aria-labelledby="examples-label"></div>
+      </div>
+    </div>
+    <button type="button" class="go" id="go"><span>Estimate</span><span><kbd>⌘/Ctrl + Enter</kbd> <span aria-hidden="true">→</span></span></button>
+  </section>
+
+  <section class="pane" aria-labelledby="out-h" aria-live="polite">
+    <div class="pane-head">
+      <h2 id="out-h">02 — Output</h2>
+      <span id="out-project"></span>
+    </div>
+    <div class="pane-body">
+      <div class="readout">
+        <div class="readout-point">
+          <span class="label">Point estimate</span>
+          <div class="big-number"><strong id="point">—</strong><span>SP</span></div>
+        </div>
+        <div class="readout-interval">
+          <span class="label"><span id="level-label">90</span>% interval</span>
+          <strong id="interval">—</strong>
+          <span class="sub" id="interval-sub">Enter an issue and press Estimate.</span>
+        </div>
+      </div>
+
+      <fieldset>
+        <legend class="label">Confidence · higher = wider</legend>
+        <div class="chips levels" id="levels"></div>
+      </fieldset>
+
+      <div class="axis empty" id="axis" role="img" aria-label="No estimate yet"></div>
+
+      <div class="badge idle" id="badge">
+        <div class="badge-title" id="badge-title">? Coverage</div>
+        <p id="badge-body">Loading test results…</p>
+      </div>
+      <p class="truth" id="truth" hidden></p>
+      <p class="note" id="note" hidden></p>
+    </div>
+  </section>
+</main>
+
+<section class="section" aria-labelledby="sim-h">
+  <div class="section-head">
+    <h2 id="sim-h">Nearest past issues</h2>
+    <span><span data-project-name></span> · train split · cosine similarity, TF-IDF</span>
+  </div>
+  <table class="table neighbours">
+    <thead>
+      <tr>
+        <th scope="col">#</th>
+        <th scope="col">Issue</th>
+        <th scope="col" style="text-align:right">Actual SP</th>
+        <th scope="col" class="sim">Similarity</th>
+      </tr>
+    </thead>
+    <tbody id="neighbours">
+      <tr class="empty-row"><td colspan="4">Estimate an issue to see the most similar training issues.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="section" aria-labelledby="facts-h">
+  <h2 class="stats-title" id="facts-h">Test run, in three numbers</h2>
+  <div class="stats">
+    <div class="stat">
+      <span class="label">A / Coverage</span>
+      <span class="stat-value" data-stat="coverage">—</span>
+      <p data-stat="coverage-text">Test coverage at a 90% target.</p>
+    </div>
+    <div class="stat">
+      <span class="label">B / Over baseline</span>
+      <span class="stat-value" data-stat="gain">—</span>
+      <p data-stat="gain-text">MAE gain over always predicting the median.</p>
+    </div>
+    <div class="stat">
+      <span class="label">C / Drift</span>
+      <span class="stat-value drift" data-stat="drift">—</span>
+      <p data-stat="drift-text">Typical estimate over time in the drifting project.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <span>Data: Deep-SE (Choetkiertikul et al., 2018) · 4 projects · <span data-n-issues>~9.5k</span> issues</span>
+  <a href="method.html">Method and results →</a>
+</footer>
+
+<script src="assets/estimator.js"></script>
+<script src="assets/common.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
