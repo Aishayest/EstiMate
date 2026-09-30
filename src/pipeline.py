@@ -2,7 +2,7 @@
 
 Usage: python -m src.pipeline
 """
-from src import build_demo, download_data, plots, run_conformal, run_experiments, run_final
+from src import build_demo, download_data, export_web, plots, run_conformal, run_experiments, run_final
 
 
 def main():
@@ -12,6 +12,7 @@ def main():
     run_final.main()
     plots.main()
     build_demo.main()
+    export_web.main()
 
 
 if __name__ == "__main__":
