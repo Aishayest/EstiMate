@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>EstiMate — Estimate</title>
-<meta name="description" content="Story points from issue text, with a conformal prediction interval checked on held-out issues.">
+<title>EstiMate — Try it</title>
+<meta name="description" content="Paste a software task and get a story point estimate plus a range that was checked on tasks the tool never saw.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
@@ -14,9 +14,9 @@
 <body>
 
 <div class="topbar">
-  <span>Story point estimator / v0.1</span>
+  <span>Task size estimator</span>
   <span class="topbar-right">
-    <span class="topbar-model">TF-IDF + Ridge · split conformal · runs in your browser</span>
+    <span class="topbar-model">Runs in your browser · what you type stays on this page</span>
     <button type="button" class="theme-toggle" data-theme-toggle>Dark</button>
   </span>
 </div>
@@ -27,48 +27,55 @@
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 7h18"/><path d="M3 12h18"/><path d="M3 17h18"/></svg>
   </button>
   <nav class="nav" id="nav" aria-label="Main">
-    <a href="index.html" aria-current="page">[01] Estimate</a>
-    <a href="method.html">[02] Method</a>
+    <a href="index.html" aria-current="page">[01] Try it</a>
+    <a href="method.html">[02] How it works</a>
     <a href="https://github.com/Aishayest/EstiMate">GitHub ↗</a>
   </nav>
 </header>
 
 <section class="hero">
   <div class="hero-main">
-    <h1>Story points from the issue text. With an interval you can check.</h1>
-    <p>The model says how many story points an issue is likely to take, and how wide the honest margin around that guess is.</p>
-    <p class="hero-meta">Deep-SE · <span data-n-issues>~9.5k</span> issues · 4 projects · split by time · test used once</p>
+    <h1>How big is this task? A guess, and an honest range.</h1>
+    <p>Software teams size their tasks in <strong>story points</strong>: a rough unit of effort, where 1 is tiny and 8 is big. Paste a task and EstiMate suggests its size, plus a range it has proven it can be trusted with.</p>
+    <ol class="steps" aria-label="How to use">
+      <li><b>1</b><span>Pick a team</span></li>
+      <li><b>2</b><span>Paste a task, or try a real one</span></li>
+      <li><b>3</b><span>Read the size and the range</span></li>
+    </ol>
+    <p class="hero-meta">Learned from <span data-n-issues>9,468</span> real tasks of 4 open-source teams · checked on newer tasks it never saw</p>
   </div>
   <dl class="hero-side facts-list">
+    <div><dt>Learned from</dt><dd><span data-n-issues>9,468</span> real tasks</dd></div>
+    <div><dt>Teams</dt><dd>4 open-source projects</dd></div>
+    <div><dt>Checked on</dt><dd><span data-n-test>1,897</span> newer tasks</dd></div>
+    <div><dt>Those tasks</dt><dd>never seen in training</dd></div>
     <div><dt>Data</dt><dd>Deep-SE, 2018</dd></div>
-    <div><dt>Issues</dt><dd data-n-issues>~9,500</dd></div>
-    <div><dt>Projects</dt><dd>4</dd></div>
-    <div><dt>Split</dt><dd>by time</dd></div>
-    <div><dt>Test set</dt><dd>used once</dd></div>
   </dl>
 </section>
 
 <main class="panel">
   <section class="pane" aria-labelledby="in-h">
     <div class="pane-head">
-      <h2 id="in-h">01 — Input</h2>
-      <span>text → TF-IDF → Ridge</span>
+      <h2 id="in-h">Steps 1–2 — Your task</h2>
+      <span>stays on this page</span>
     </div>
     <div class="pane-body">
       <fieldset>
-        <legend class="label">Project · calibrated separately</legend>
+        <legend class="label">Which team? Each team sizes tasks its own way</legend>
         <div class="chips" id="projects"></div>
+        <p class="team-about" id="team-about"></p>
       </fieldset>
       <div class="field">
-        <label class="label" for="task">Issue title and description</label>
-        <textarea id="task" placeholder="Paste an issue: title on the first line, description below."></textarea>
+        <label class="label" for="task">Task title and description</label>
+        <textarea id="task" placeholder="For example: Add a timeout to health checks. The executor waits forever for a health check to return…"></textarea>
       </div>
       <div>
         <div class="examples-head">
-          <span class="label" id="examples-label">Or load a test issue</span>
-          <button type="button" class="link-button" id="shuffle">↻ Other issues</button>
+          <span class="label" id="examples-label">Or try a real task from this team</span>
+          <button type="button" class="link-button" id="shuffle">↻ Show others</button>
         </div>
         <div class="examples" id="examples" role="group" aria-labelledby="examples-label"></div>
+        <p class="hint">These are newer tasks the tool never saw, so you can check its answer against the team's real one.</p>
       </div>
     </div>
     <button type="button" class="go" id="go"><span>Estimate</span><span><kbd>⌘/Ctrl + Enter</kbd> <span aria-hidden="true">→</span></span></button>
@@ -76,34 +83,35 @@
 
   <section class="pane" aria-labelledby="out-h" aria-live="polite">
     <div class="pane-head">
-      <h2 id="out-h">02 — Output</h2>
+      <h2 id="out-h">Step 3 — The answer</h2>
       <span id="out-project"></span>
     </div>
     <div class="pane-body">
       <div class="readout">
         <div class="readout-point">
-          <span class="label">Point estimate</span>
-          <div class="big-number"><strong id="point">—</strong><span>SP</span></div>
+          <span class="label">Most likely size</span>
+          <div class="big-number"><strong id="point">—</strong><span id="point-unit">points</span></div>
         </div>
         <div class="readout-interval">
-          <span class="label"><span id="level-label">90</span>% interval</span>
+          <span class="label">Likely range</span>
           <strong id="interval">—</strong>
-          <span class="sub" id="interval-sub">Enter an issue and press Estimate.</span>
+          <span class="explain" id="interval-sub">Paste a task and press Estimate.</span>
         </div>
       </div>
 
       <fieldset>
-        <legend class="label">Confidence · higher = wider</legend>
+        <legend class="label">How safe should the range be? Safer = wider</legend>
         <div class="chips levels" id="levels"></div>
       </fieldset>
 
       <div class="axis empty" id="axis" role="img" aria-label="No estimate yet"></div>
 
+      <p class="truth" id="truth" hidden></p>
+
       <div class="badge idle" id="badge">
-        <div class="badge-title" id="badge-title">? Coverage</div>
+        <div class="badge-title" id="badge-title">? Checked?</div>
         <p id="badge-body">Loading test results…</p>
       </div>
-      <p class="truth" id="truth" hidden></p>
       <p class="note" id="note" hidden></p>
     </div>
   </section>
@@ -111,48 +119,48 @@
 
 <section class="section" aria-labelledby="sim-h">
   <div class="section-head">
-    <h2 id="sim-h">Nearest past issues</h2>
-    <span><span data-project-name></span> · train split · cosine similarity, TF-IDF</span>
+    <h2 id="sim-h">Similar tasks this team already sized</h2>
+    <span>A quick sanity check: tasks with the most words in common</span>
   </div>
   <table class="table neighbours">
     <thead>
       <tr>
         <th scope="col">#</th>
-        <th scope="col">Issue</th>
-        <th scope="col" style="text-align:right">Actual SP</th>
-        <th scope="col" class="sim">Similarity</th>
+        <th scope="col">Task</th>
+        <th scope="col" style="text-align:right">Points</th>
+        <th scope="col" class="sim">How similar</th>
       </tr>
     </thead>
     <tbody id="neighbours">
-      <tr class="empty-row"><td colspan="4">Estimate an issue to see the most similar training issues.</td></tr>
+      <tr class="empty-row"><td colspan="4">Estimate a task to see similar ones this team has already sized.</td></tr>
     </tbody>
   </table>
 </section>
 
 <section class="section" aria-labelledby="facts-h">
-  <h2 class="stats-title" id="facts-h">Test run, in three numbers</h2>
+  <h2 class="stats-title" id="facts-h">What the experiment showed</h2>
   <div class="stats">
     <div class="stat">
-      <span class="label">A / Coverage</span>
+      <span class="label">A / The range keeps its promise</span>
       <span class="stat-value" data-stat="coverage">—</span>
-      <p data-stat="coverage-text">Test coverage at a 90% target.</p>
+      <p data-stat="coverage-text">How often the 90% range caught the real answer.</p>
     </div>
     <div class="stat">
-      <span class="label">B / Over baseline</span>
+      <span class="label">B / The exact number is hard</span>
       <span class="stat-value" data-stat="gain">—</span>
-      <p data-stat="gain-text">MAE gain over always predicting the median.</p>
+      <p data-stat="gain-text">Accuracy gain over always guessing the team's usual size.</p>
     </div>
     <div class="stat">
-      <span class="label">C / Drift</span>
+      <span class="label">C / Teams change</span>
       <span class="stat-value drift" data-stat="drift">—</span>
-      <p data-stat="drift-text">Typical estimate over time in the drifting project.</p>
+      <p data-stat="drift-text">One team's usual task size, earlier vs later.</p>
     </div>
   </div>
 </section>
 
 <footer class="site-footer">
-  <span>Data: Deep-SE (Choetkiertikul et al., 2018) · 4 projects · <span data-n-issues>~9.5k</span> issues</span>
-  <a href="method.html">Method and results →</a>
+  <span>Data: Deep-SE, real tasks from open-source projects (Choetkiertikul et al., 2018)</span>
+  <a href="method.html">How it works →</a>
 </footer>
 
 <script src="assets/estimator.js"></script>

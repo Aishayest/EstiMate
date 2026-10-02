@@ -1,8 +1,10 @@
-// Estimate page: project/level selection, in-browser inference, interval axis, badges.
+// "Try it" page: team/level selection, in-browser estimate, plain-language answer.
 (function () {
   "use strict";
 
   var LEVELS = [50, 80, 90];
+  var LEVEL_LABELS = { 50: "50% · narrow", 80: "80%", 90: "90% · safe" };
+  var OUT_OF = { 50: "1 in 2", 80: "4 in 5", 90: "9 in 10" };
   var SCALE_MARKS = [1, 2, 3, 5, 8, 13, 21, 40];
   var AXIS_MAXES = [13, 21, 40];
   var N_EXAMPLES_SHOWN = 3;
@@ -25,6 +27,8 @@
     if (text !== undefined) n.textContent = text;
     return n;
   };
+  var points = function (n) { return n + (n === 1 ? " point" : " points"); };
+  var range = function (lo, hi) { return lo === hi ? points(lo) : lo + "–" + points(hi); };
 
   function loadModel(project) {
     if (!models[project]) {
@@ -53,12 +57,16 @@
 
   function renderProjects() {
     var names = Object.keys(state.summary.projects);
-    renderChips($("projects"), names.map(function (n) { return { label: n, value: n }; }),
+    renderChips($("projects"), names.map(function (n) { return { label: Common.teamName(n), value: n }; }),
       function (v) { return v === state.project; }, selectProject);
+    var team = Common.TEAMS[state.project];
+    var info = state.summary.projects[state.project];
+    $("team-about").textContent = team.name + " builds " + team.about + ". Its typical task was sized at " +
+      points(info.median_sp_train) + ".";
   }
 
   function renderLevels() {
-    renderChips($("levels"), LEVELS.map(function (l) { return { label: l + "%", value: l }; }),
+    renderChips($("levels"), LEVELS.map(function (l) { return { label: LEVEL_LABELS[l], value: l }; }),
       function (v) { return v === state.level; },
       function (l) {
         state.level = l;
@@ -99,8 +107,7 @@
     state.loaded = null;
     renderProjects();
     renderExamples();
-    document.querySelectorAll("[data-project-name]").forEach(function (n) { n.textContent = project; });
-    $("out-project").textContent = project;
+    $("out-project").textContent = Common.teamName(project);
     setBusy(true);
     return loadModel(project).then(function (model) {
       if (state.project !== project) return; // a newer selection won
@@ -115,7 +122,7 @@
   function setBusy(busy) {
     var go = $("go");
     go.disabled = busy;
-    go.firstElementChild.textContent = busy ? "Loading model…" : "Estimate";
+    go.firstElementChild.textContent = busy ? "Loading…" : "Estimate";
   }
 
   // ---------- output ----------
@@ -123,13 +130,13 @@
   function clearOutput() {
     state.result = null;
     $("point").textContent = "—";
+    $("point-unit").textContent = "points";
     $("interval").textContent = "—";
-    $("interval-sub").textContent = "Enter an issue and press Estimate.";
-    $("level-label").textContent = String(state.level);
+    $("interval-sub").textContent = "Paste a task and press Estimate.";
     renderAxis(null);
     $("truth").hidden = true;
     $("note").hidden = true;
-    $("neighbours").replaceChildren(emptyRow("Estimate an issue to see the most similar training issues."));
+    $("neighbours").replaceChildren(emptyRow("Estimate a task to see similar ones this team has already sized."));
   }
 
   function run() {
@@ -139,19 +146,20 @@
     var r = Estimator.estimate(state.model, text, state.level);
     state.result = r;
 
-    $("level-label").textContent = String(state.level);
-    $("point").textContent = String(Math.round(r.point));
-    $("interval").textContent = r.lo.toFixed(1) + "–" + r.hi.toFixed(1);
-    $("interval-sub").textContent = "ŷ = " + r.point.toFixed(1) + " · as whole SP: " +
-      (r.loInt === r.hiInt ? r.loInt : r.loInt + "–" + r.hiInt);
+    var point = Math.max(1, Math.round(r.point));
+    $("point").textContent = String(point);
+    $("point-unit").textContent = point === 1 ? "point" : "points";
+    $("interval").textContent = range(r.loInt, r.hiInt);
+    $("interval-sub").textContent = "Built to catch the team's real size in " + OUT_OF[state.level] +
+      " tasks. Exact guess: " + r.point.toFixed(1) + ".";
     renderAxis(r);
     renderBadge();
     renderTruth(r);
 
     var note = $("note");
     note.hidden = r.known > 0;
-    note.textContent = "None of these words are in the " + state.project + " training vocabulary, " +
-      "so the estimate is the model's baseline value.";
+    note.textContent = "The tool doesn't recognise any words in this text, so it falls back to this team's " +
+      "usual size. Try adding more detail.";
 
     renderNeighbours(Estimator.nearest(state.model, r.vec, 4));
   }
@@ -161,10 +169,14 @@
     var ex = state.loaded;
     if (!ex) { truth.hidden = true; return; }
     var inside = ex.sp >= r.loInt && ex.sp <= r.hiInt;
+    truth.className = "truth " + (inside ? "hit" : "miss");
     truth.replaceChildren(
-      document.createTextNode(ex.key + " was actually "),
-      el("strong", null, ex.sp + " SP"),
-      document.createTextNode(" — " + (inside ? "inside" : "outside") + " the " + state.level + "% interval.")
+      document.createTextNode((inside ? "✓ " : "✗ ") + "The team really sized " + ex.key + " at "),
+      el("strong", null, points(ex.sp)),
+      document.createTextNode(inside
+        ? " — inside the range."
+        : " — outside the range. That is expected now and then: a " + state.level + "% range should miss about " +
+          { 50: "1 in 2", 80: "1 in 5", 90: "1 in 10" }[state.level] + " tasks.")
     );
     truth.hidden = false;
   }
@@ -172,26 +184,31 @@
   function renderAxis(r) {
     var axis = $("axis");
     axis.replaceChildren();
-    var hi = r ? r.hi : 13;
-    var max = AXIS_MAXES.find(function (m) { return m >= hi; }) || Math.ceil(hi);
+    var top = r ? r.hiInt : 13;
+    var max = AXIS_MAXES.find(function (m) { return m >= top; }) || Math.ceil(top);
     var pos = function (v) { return (Math.min(v, max) / max * 100).toFixed(2) + "%"; };
     var marks = SCALE_MARKS.filter(function (v) { return v <= max; });
     var step = max <= 13 ? 0.5 : 1;
 
     axis.classList.toggle("empty", !r);
     if (r) {
-      var lo = el("span", "edge", r.lo.toFixed(1));
-      lo.style.left = pos(r.lo);
-      var hiLabel = el("span", "edge", r.hi > max ? "> " + max : r.hi.toFixed(1));
-      hiLabel.style.left = pos(r.hi);
+      // The band covers the whole-point range shown in words; a single value gets a small bar.
+      var lo = r.loInt === r.hiInt ? r.loInt - 0.25 : r.loInt;
+      var hi = r.loInt === r.hiInt ? r.hiInt + 0.25 : r.hiInt;
+      var loLabel = el("span", "edge", String(r.loInt));
+      loLabel.style.left = pos(lo);
+      var hiLabel = el("span", "edge", String(r.hiInt));
+      hiLabel.style.left = pos(hi);
       var band = el("div", "band");
-      band.style.left = pos(r.lo);
-      band.style.width = ((Math.min(r.hi, max) - r.lo) / max * 100).toFixed(2) + "%";
+      band.style.left = pos(lo);
+      band.style.width = ((Math.min(hi, max) - lo) / max * 100).toFixed(2) + "%";
       var point = el("div", "point");
       point.style.left = pos(r.point);
-      axis.append(lo, hiLabel, band, point);
-      axis.setAttribute("aria-label", state.level + "% interval from " + r.lo.toFixed(1) + " to " +
-        r.hi.toFixed(1) + " story points, point estimate " + r.point.toFixed(1));
+      axis.append(band, point);
+      if (r.loInt !== r.hiInt) axis.append(loLabel, hiLabel);
+      else axis.append(loLabel);
+      axis.setAttribute("aria-label", "Likely range " + range(r.loInt, r.hiInt) +
+        ", most likely " + points(Math.max(1, Math.round(r.point))));
     } else {
       axis.setAttribute("aria-label", "No estimate yet");
     }
@@ -214,22 +231,23 @@
     var badge = $("badge");
     var info = state.summary && state.project ? state.summary.projects[state.project] : null;
     if (!info) return;
+    var name = Common.teamName(state.project);
     var c = info.coverage[String(state.level)];
     var cov = Common.pct(c.coverage);
-    var ci = Common.pct(c.ci[0]) + "–" + Common.pct(c.ci[1]);
     if (info.drift) {
       badge.className = "badge warn";
-      $("badge-title").textContent = "! Drift";
-      $("badge-body").textContent = "This team's typical estimate fell from " + info.median_sp_train +
-        " to " + info.median_sp_test + " SP over time, so intervals built on older issues sit too high. At 50% " +
-        "they covered only " + Common.pct(info.coverage["50"].coverage) + " of later issues." +
-        (state.level === 50 ? "" : " At " + state.level + "%: " + cov + " (95% CI " + ci + ").");
+      $("badge-title").textContent = "! Be careful";
+      $("badge-body").textContent = "This team started giving smaller sizes over time (typical task: " +
+        info.median_sp_train + " → " + info.median_sp_test + " points). The tool learned from the older tasks, so it " +
+        "tends to aim too high here. Its narrow 50% range caught the real answer only " +
+        Common.pct(info.coverage["50"].coverage) + " of the time" +
+        (state.level === 50 ? "." : "; the " + state.level + "% range still held: " + cov + ".");
     } else {
       badge.className = "badge ok";
-      $("badge-title").textContent = "✓ Held on test";
-      $("badge-body").textContent = "On " + info.n_test + " later " + state.project + " issues the model never " +
-        "saw, " + state.level + "% intervals contained the real estimate " + cov + " of the time (95% CI " + ci +
-        "). Mean width " + c.mean_width.toFixed(1) + " SP.";
+      $("badge-title").textContent = "✓ Checked";
+      $("badge-body").textContent = "We tested the " + state.level + "% range on " + info.n_test + " newer " + name +
+        " tasks the tool had never seen. It caught the team's real size " + cov + " of the time (aim: " +
+        state.level + "%).";
     }
   }
 
@@ -244,7 +262,7 @@
   function renderNeighbours(list) {
     var body = $("neighbours");
     if (!list.length) {
-      body.replaceChildren(emptyRow("No training issue shares a word with this text."));
+      body.replaceChildren(emptyRow("No task from this team shares a word with this text."));
       return;
     }
     body.replaceChildren.apply(body, list.map(function (n, i) {
@@ -260,7 +278,7 @@
       var fill = el("i");
       fill.style.width = (n.similarity * 100).toFixed(0) + "%";
       track.appendChild(fill);
-      bar.append(track, el("span", null, n.similarity.toFixed(2).replace(/^0/, "")));
+      bar.append(track, el("span", null, Common.pct(n.similarity)));
       sim.appendChild(bar);
       tr.appendChild(sim);
       return tr;
@@ -272,22 +290,32 @@
   function renderStats(summary) {
     var set = function (key, text) { document.querySelector('[data-stat="' + key + '"]').textContent = text; };
     var names = Object.keys(summary.projects);
+    var nTest = names.reduce(function (a, n) { return a + summary.projects[n].n_test; }, 0);
+    document.querySelectorAll("[data-n-test]").forEach(function (n) { n.textContent = nTest.toLocaleString("en-US"); });
+
     set("coverage", Common.pct(summary.overall.coverage_90, 1));
-    set("coverage-text", "Mean test coverage at a 90% target across " + names.length +
-      " projects. Mean width " + summary.overall.mean_width_90.toFixed(1) + " SP.");
+    set("coverage-text", "We asked for a range that catches the real answer 9 times in 10. On " +
+      nTest.toLocaleString("en-US") + " newer tasks it did so " + Common.pct(summary.overall.coverage_90, 1) +
+      " of the time. A typical range is about " + summary.overall.mean_width_90.toFixed(0) + " points wide.");
 
     var gains = names.map(function (n) { return [n, summary.projects[n].gain_vs_median]; })
       .sort(function (a, b) { return b[1] - a[1]; });
+    var better = gains.filter(function (g) { return g[1] > 0; });
+    var worse = gains.filter(function (g) { return g[1] < 0; });
     set("gain", "≤" + Math.round(gains[0][1] * 100) + "%");
-    set("gain-text", "MAE gain over always predicting the median: " + gains.map(function (g) {
-      return g[0] + " " + Common.signedPct(g[1]);
-    }).join(", ") + ". Effort mostly lives outside the issue text.");
+    set("gain-text", "Guessing the exact number from text alone is hard. Compared with always guessing the " +
+      "team's usual size, the tool is more accurate by " + better.map(function (g) {
+        return Common.signedPct(g[1]).replace("+", "") + " on " + Common.teamName(g[0]);
+      }).join(", ") + (worse.length ? ", and less accurate on " + worse.map(function (g) {
+        return Common.teamName(g[0]);
+      }).join(", ") : "") + ". The value is in the honest range.");
 
     var drift = Common.driftProject(summary);
     if (drift) {
       set("drift", drift.info.median_sp_train + "→" + drift.info.median_sp_test);
-      set("drift-text", "Typical estimate in " + drift.name + ", training period → test period. " +
-        "The guarantee holds only while new issues look like old ones.");
+      set("drift-text", Common.teamName(drift.name) + "'s typical task shrank from " + drift.info.median_sp_train +
+        " to " + points(drift.info.median_sp_test) + " over time. A range is only reliable while new tasks look " +
+        "like old ones, so the tool warns you about this team.");
     }
   }
 

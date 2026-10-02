@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>EstiMate — Method</title>
-<meta name="description" content="How EstiMate was built and evaluated: time-based split, split conformal intervals, one-shot test evaluation.">
+<title>EstiMate — How it works</title>
+<meta name="description" content="How EstiMate learns task sizes from text, where its range comes from, and how it was checked on tasks it never saw.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
@@ -14,9 +14,9 @@
 <body class="method">
 
 <div class="topbar">
-  <span>Story point estimator / v0.1</span>
+  <span>Task size estimator</span>
   <span class="topbar-right">
-    <span class="topbar-model">TF-IDF + Ridge · split conformal · runs in your browser</span>
+    <span class="topbar-model">Runs in your browser · what you type stays on this page</span>
     <button type="button" class="theme-toggle" data-theme-toggle>Dark</button>
   </span>
 </div>
@@ -27,99 +27,99 @@
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 7h18"/><path d="M3 12h18"/><path d="M3 17h18"/></svg>
   </button>
   <nav class="nav" id="nav" aria-label="Main">
-    <a href="index.html">[01] Estimate</a>
-    <a href="method.html" aria-current="page">[02] Method</a>
+    <a href="index.html">[01] Try it</a>
+    <a href="method.html" aria-current="page">[02] How it works</a>
     <a href="https://github.com/Aishayest/EstiMate">GitHub ↗</a>
   </nav>
 </header>
 
 <section class="hero">
   <div class="hero-main">
-    <h1>Not record accuracy. An honest experiment.</h1>
-    <p>No leakage, a split by time, a test set touched once at the very end, and results that reproduce with one command.</p>
+    <h1>How it works, and how we checked it.</h1>
+    <p>The goal was not a record score. It was an honest test: the tool learns from older tasks and is graded once, at the very end, on newer tasks it has never seen.</p>
   </div>
   <div class="hero-side reproduce">
-    <span class="label">Reproduce</span>
+    <span class="label">Run everything yourself</span>
     <code>python -m src.pipeline</code>
-    <span>~10 min · same numbers every run</span>
+    <span>~10 min · the same numbers every time</span>
   </div>
 </section>
 
 <main>
 <section class="section" aria-labelledby="pipe-h">
-  <h2 class="stats-title" id="pipe-h">01 — Pipeline</h2>
+  <h2 class="stats-title" id="pipe-h">01 — Six steps</h2>
   <ol class="pipeline">
     <li>
       <span class="step">01 →</span>
-      <strong>Deep-SE issues</strong>
-      <span>4 open-source Jira projects, <span data-n-issues>~9.5k</span> issues with story points.</span>
+      <strong>Real tasks</strong>
+      <span><span data-n-issues>9,468</span> tasks with story points from 4 open-source teams.</span>
     </li>
     <li>
       <span class="step">02 →</span>
-      <strong>Split by time</strong>
-      <span>Train on the oldest 60%, calibrate on the next 20%, test on the newest 20%.</span>
+      <strong>Old vs new</strong>
+      <span>Learn from the oldest 60%, set the range on the next 20%, grade on the newest 20%.</span>
     </li>
     <li>
       <span class="step">03 →</span>
-      <strong>Text to vector</strong>
-      <span>TF-IDF word weights. MiniLM sentence embeddings were tested as an alternative.</span>
+      <strong>Read the words</strong>
+      <span>Turn the text into numbers: which words appear, and how rare they are (TF-IDF).</span>
     </li>
     <li>
       <span class="step">04 →</span>
-      <strong>Regress SP</strong>
-      <span>Ridge on TF-IDF; gradient boosting on MiniLM for comparison. Tuned on validation only.</span>
+      <strong>Guess a size</strong>
+      <span>A simple linear model (Ridge) links those words to story points.</span>
     </li>
     <li class="hot">
       <span class="step">05 →</span>
-      <strong>Conformal calibration</strong>
-      <span>Measure errors on the calibration slice, pick the margin q.</span>
+      <strong>Measure the mistakes</strong>
+      <span>See how far off it was on tasks it didn't learn from. That sets the range width.</span>
     </li>
     <li class="end">
       <span class="step">06 ■</span>
-      <strong>Test, once</strong>
-      <span>Coverage and width with bootstrap CIs, at the very end.</span>
+      <strong>Final grade, once</strong>
+      <span>Check the newest tasks at the very end. No changes after that.</span>
     </li>
   </ol>
 </section>
 
 <section class="section split-12" aria-labelledby="conf-h">
   <div class="left">
-    <h2 class="stats-title" id="conf-h" style="margin:0">02 — The interval</h2>
-    <p class="lede">Look at how wrong the model was on issues it never trained on. Take a margin wide enough to cover the chosen share of them.</p>
-    <p class="body">Split conformal prediction. The guarantee is mathematical but conditional: it holds while new issues are exchangeable with the calibration ones. Section 04 shows what happens when they are not.</p>
+    <h2 class="stats-title" id="conf-h" style="margin:0">02 — Where the range comes from</h2>
+    <p class="lede">Look at how wrong the tool was on tasks it hadn't seen. Make the range just wide enough to cover 9 out of 10 of those mistakes.</p>
+    <p class="body">This is called conformal prediction. It comes with a real guarantee, but only while new tasks resemble the ones used to set the range. Section 04 shows a team where they didn't.</p>
   </div>
   <div class="right code-card">
-    <div class="label">conformal.py</div>
-<pre><span class="c"># errors on n calibration issues</span>
-r_i = |y_i − ŷ_i|
+    <div class="label">The math, for the curious</div>
+<pre><span class="c"># how wrong was it on n tasks it didn't learn from?</span>
+r_i = |real_i − guess_i|
 
-<span class="c"># margin for level 1 − α</span>
+<span class="c"># margin that covers a share 1 − α of them</span>
 q   = r_(k),   k = ⌈(n + 1)(1 − α)⌉
 
-<span class="c"># interval for a new issue</span>
-[ max(1, ŷ − q),  ŷ + q ]
+<span class="c"># range for a new task</span>
+[ max(1, guess − q),  guess + q ]
 
-<span class="c"># story points are integers: round inward,</span>
-<span class="c"># coverage is unchanged</span>
-[ ⌈lo⌉, ⌊hi⌋ ]</pre>
+<span class="c"># story points are whole numbers: round inward,</span>
+<span class="c"># the share it catches stays the same</span>
+[ ⌈low⌉, ⌊high⌋ ]</pre>
   </div>
 </section>
 
 <section class="section" aria-labelledby="res-h">
   <div class="section-head">
-    <h2 id="res-h">03 — Test results</h2>
-    <span>TF-IDF + Ridge, split conformal · CI = bootstrap 95%</span>
+    <h2 id="res-h">03 — The final grade</h2>
+    <span>Newest 20% of each team's tasks · small grey numbers = 95% bootstrap range</span>
   </div>
   <div class="table-scroll">
     <table class="table results">
       <thead>
         <tr>
-          <th scope="col">Project</th>
-          <th scope="col">Test n</th>
-          <th scope="col">MAE</th>
-          <th scope="col">Median baseline</th>
-          <th scope="col">Coverage @90</th>
-          <th scope="col">Mean width</th>
+          <th scope="col">Team</th>
+          <th scope="col">Tasks checked</th>
+          <th scope="col">Avg. miss, points</th>
+          <th scope="col">Always guessing usual size</th>
+          <th scope="col">90% range caught answer</th>
+          <th scope="col">Range width</th>
         </tr>
       </thead>
       <tbody id="results"></tbody>
@@ -129,45 +129,45 @@ q   = r_(k),   k = ⌈(n + 1)(1 − α)⌉
 </section>
 
 <section class="section" aria-labelledby="fig-h">
-  <h2 class="stats-title" id="fig-h">Figures</h2>
+  <h2 class="stats-title" id="fig-h">Charts</h2>
   <div class="figures">
     <figure>
-      <div class="frame"><img src="figures/calibration.png" alt="Empirical versus target coverage on test for four projects and three methods at 50, 80 and 90 percent" loading="lazy"></div>
-      <figcaption><span>Fig. 1</span><span>Empirical vs target coverage on test. The dashed diagonal is perfect calibration; talenddataquality falls far below it at 50%.</span></figcaption>
+      <div class="frame"><img src="figures/calibration.png" alt="Share of tasks caught by the range versus the share asked for, for four teams and three methods" loading="lazy"></div>
+      <figcaption><span>Fig. 1</span><span>Did the range catch as many tasks as promised? On the dashed line, exactly as promised. Talend Data Quality falls far below it for the narrow 50% range.</span></figcaption>
     </figure>
     <figure>
-      <div class="frame"><img class="narrow" src="figures/interval_width.png" alt="Mean width of 90 percent intervals per project and method, with coverage" loading="lazy"></div>
-      <figcaption><span>Fig. 2</span><span>Mean width of 90% intervals on test, coverage in brackets. Narrower is better at equal coverage.</span></figcaption>
+      <div class="frame"><img class="narrow" src="figures/interval_width.png" alt="Average width of 90 percent ranges per team and method" loading="lazy"></div>
+      <figcaption><span>Fig. 2</span><span>How wide the 90% range is for each team and method. Narrower is more useful, as long as it still catches 9 in 10. Blue is the method this site uses.</span></figcaption>
     </figure>
     <figure>
-      <div class="frame"><img src="figures/coverage_over_time.png" alt="Coverage of 90 percent intervals across four chronological quarters of the test period" loading="lazy"></div>
-      <figcaption><span>Fig. 3</span><span>Coverage of 90% intervals across chronological quarters of the test period.</span></figcaption>
+      <div class="frame"><img src="figures/coverage_over_time.png" alt="Share of tasks caught by the 90 percent range in four time periods of the test set" loading="lazy"></div>
+      <figcaption><span>Fig. 3</span><span>Does the 90% range keep working as time goes on? The test period is split into four quarters, oldest to newest.</span></figcaption>
     </figure>
     <figure>
-      <div class="frame"><img src="figures/example_intervals.png" alt="Fifty and ninety percent intervals for the 40 most recent mesos test issues, with true story points" loading="lazy"></div>
-      <figcaption><span>Fig. 4</span><span>The 40 most recent mesos test issues: 50% and 90% intervals against the true estimate.</span></figcaption>
+      <div class="frame"><img src="figures/example_intervals.png" alt="Ranges for the 40 most recent Apache Mesos tasks with the real story points" loading="lazy"></div>
+      <figcaption><span>Fig. 4</span><span>The 40 most recent Apache Mesos tasks. Bars are the ranges, dots are what the team really chose; crosses fell outside.</span></figcaption>
     </figure>
   </div>
 </section>
 
 <section class="section drift-block" aria-labelledby="drift-h">
   <div class="drift-left">
-    <span class="eyebrow">04 — Where the guarantee stops</span>
+    <span class="eyebrow">04 — When the promise breaks</span>
     <span class="big" data-drift="medians">—</span>
-    <span class="mono">typical SP, <span data-drift="name"></span>, training → test period</span>
+    <span class="mono">typical task size, <span data-drift="name"></span>, earlier → later</span>
   </div>
   <div class="drift-right">
-    <h2 id="drift-h">The team started estimating smaller. The intervals didn't know.</h2>
-    <p data-drift="body">Intervals calibrated on older issues sat too high for new ones.</p>
-    <p>The method did what it promises. The assumption behind it, that the future looks like the past, did not hold.</p>
+    <h2 id="drift-h">The team started sizing tasks smaller. The tool didn't know.</h2>
+    <p data-drift="body">Ranges set on older tasks sat too high for new ones.</p>
+    <p>The method did what it promises. Its one assumption, that the future looks like the past, did not hold for this team. That is why the site warns about it.</p>
   </div>
 </section>
 
 <section class="section split-12" aria-labelledby="rep-h">
   <div class="left">
-    <h2 class="stats-title" id="rep-h" style="margin:0">05 — Reproduce</h2>
-    <p class="body">One command goes from downloading the data to the figures, and also exports the files this page loads.</p>
-    <a class="repo-link" href="https://github.com/Aishayest/EstiMate">Open repository <span aria-hidden="true">↗</span></a>
+    <h2 class="stats-title" id="rep-h" style="margin:0">05 — Run it yourself</h2>
+    <p class="body">One command downloads the data, trains and checks everything, draws the charts and builds the files this site loads.</p>
+    <a class="repo-link" href="https://github.com/Aishayest/EstiMate">Open the code <span aria-hidden="true">↗</span></a>
   </div>
 <pre class="right terminal"><span class="p">$</span> git clone https://github.com/Aishayest/EstiMate
 <span class="p">$</span> cd EstiMate && python -m venv .venv
@@ -177,8 +177,8 @@ q   = r_(k),   k = ⌈(n + 1)(1 − α)⌉
 </main>
 
 <footer class="site-footer">
-  <span>Data: Deep-SE (Choetkiertikul et al., 2018) · code: github.com/Aishayest/EstiMate</span>
-  <a href="index.html">← Try the estimator</a>
+  <span>Data: Deep-SE, real tasks from open-source projects (Choetkiertikul et al., 2018)</span>
+  <a href="index.html">← Try it</a>
 </footer>
 
 <script src="assets/common.js"></script>

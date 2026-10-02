@@ -4,6 +4,15 @@
 
   var darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
+  // Human-readable names for the four Deep-SE projects.
+  var TEAMS = {
+    mesos: { name: "Apache Mesos", about: "software that runs apps across a cluster of servers" },
+    springxd: { name: "Spring XD", about: "a system for data pipelines and streaming" },
+    appceleratorstudio: { name: "Appcelerator Studio", about: "an editor for building mobile apps" },
+    talenddataquality: { name: "Talend Data Quality", about: "a tool for checking and cleaning data" },
+  };
+  var teamName = function (key) { return (TEAMS[key] || { name: key }).name; };
+
   function currentTheme() {
     return document.documentElement.dataset.theme || (darkQuery.matches ? "dark" : "light");
   }
@@ -70,7 +79,7 @@
     var box = document.createElement("div");
     box.className = "badge warn section";
     box.setAttribute("role", "alert");
-    box.innerHTML = '<div class="badge-title">! Could not load data</div>';
+    box.innerHTML = '<div class="badge-title">! Could not load the data</div>';
     var p = document.createElement("p");
     p.textContent = "The page needs its JSON files (" + err.message + "). Serve the folder over HTTP, " +
       "e.g. `python -m http.server -d web 8000`, and open http://localhost:8000.";
@@ -82,6 +91,8 @@
   initMenu();
 
   root.Common = {
+    TEAMS: TEAMS,
+    teamName: teamName,
     loadSummary: loadSummary,
     fillCommon: fillCommon,
     driftProject: driftProject,

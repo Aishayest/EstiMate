@@ -211,6 +211,24 @@ button:focus-visible, a:focus-visible, textarea:focus-visible {
 .facts-list dt { color: var(--muted); text-transform: uppercase; }
 .facts-list dd { margin: 0; text-align: right; }
 
+/* ---------- three steps ---------- */
+
+.steps {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid var(--rule);
+  max-width: 760px;
+}
+.steps li { padding: 14px 16px; display: flex; gap: 12px; align-items: baseline; border-left: 1px solid var(--rule); font-size: 16px; line-height: 1.35; }
+.steps li:first-child { border-left: 0; }
+.steps b { font-family: var(--mono); font-size: 13px; font-weight: 600; }
+
+.team-about { margin: 12px 0 0; font-size: 15px; line-height: 1.5; color: var(--ink-2); }
+.hint { margin: 8px 0 0; font-size: 14px; line-height: 1.5; color: var(--muted); }
+
 /* ---------- estimator panel ---------- */
 
 .panel {
@@ -353,6 +371,7 @@ textarea::placeholder { color: var(--muted); }
   font-family: var(--mono);
   min-width: 0;
 }
+.readout-interval .explain { font-family: var(--sans); font-size: 15px; line-height: 1.45; color: var(--ink-2); max-width: 300px; }
 .readout-interval strong { font-size: 40px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; }
 .readout-interval .sub { font-size: 13px; color: var(--muted); }
 
@@ -387,7 +406,9 @@ textarea::placeholder { color: var(--muted); }
 .badge.idle { border-style: dashed; color: var(--ink-2); }
 .badge.idle .badge-title { border-right: 1px dashed var(--rule); }
 
-.truth { margin: 0; font-size: 15px; line-height: 1.5; }
+.truth { margin: 0; padding: 14px 16px; border: 1px solid var(--rule); font-size: 16px; line-height: 1.5; }
+.truth.hit { border-width: 2px; }
+.truth.miss { border-style: dashed; }
 .truth strong { font-family: var(--mono); }
 .note { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ink-2); }
 
@@ -630,6 +651,9 @@ body { overflow-wrap: break-word; }
   .hero-side { padding: 0 0 24px; border-left: 0; font-size: 13px; }
   .hero-side.facts-list { display: none; }
   .hero-meta { display: block !important; }
+  .steps { grid-template-columns: 1fr; }
+  .steps li { border-left: 0; border-top: 1px solid var(--rule); }
+  .steps li:first-child { border-top: 0; }
 
   .panel { margin: 0; border-left: 0; border-right: 0; border-top: 0; grid-template-columns: 1fr; }
   .pane + .pane { border-left: 0; border-top: 1px solid var(--rule); }
