@@ -161,26 +161,41 @@
 <section class="section practice" aria-labelledby="use-h">
   <div class="section-head">
     <h2 id="use-h">Used by a real team</h2>
-    <span>During my internship · the company is not named here</span>
+    <span>Internship pilot · 5 sprints · company not named</span>
   </div>
   <div class="stats practice-grid">
     <div class="stat">
-      <span class="label">Where</span>
-      <h3>A software team</h3>
-      <p>We ran EstiMate on our own team's tasks during my internship. Those tasks are internal, so they are not shown on this site.</p>
+      <span class="label">Setup</span>
+      <h3>Open-source model, team calibration</h3>
+      <p>The TF-IDF + Ridge model trained on open-source tasks was used as is, with no retraining on the team's texts. Only the range was recalibrated, on the team's 120 most recent past tasks. The team lead reviewed the size and range in sprint planning.</p>
     </div>
     <div class="stat">
-      <span class="label">How</span>
-      <h3>In sprint planning</h3>
-      <p>The team lead looked at the suggested size and range, and brought the system in step by step to get a rough idea of how long a task would take.</p>
+      <span class="label">Scale</span>
+      <span class="stat-value">145</span>
+      <p>tasks went through the tool over 5 sprints.</p>
     </div>
     <div class="stat">
-      <span class="label">What changed</span>
-      <h3>Better sizing, smaller tasks</h3>
-      <p>The team adopted it. Sizing tasks and judging how long they would take got better, it helped split work into smaller tasks, and tasks were discussed in more detail.</p>
+      <span class="label">In range</span>
+      <span class="stat-value">84%</span>
+      <p>of the team's final estimates fell inside the 90% range (122 of 145; 95% CI 77–89%). That is below the 90% target: the guarantee assumes new tasks resemble the calibration ones, and here they partly did not.</p>
+    </div>
+    <div class="stat">
+      <span class="label">Range width</span>
+      <span class="stat-value">4.5 SP</span>
+      <p>average width of the 90% range.</p>
+    </div>
+    <div class="stat">
+      <span class="label">Hidden epics</span>
+      <span class="stat-value">16 / 21</span>
+      <p>21 tasks got an unusually wide range (over 6–8 SP). The lead flagged them in planning; 16 turned out to be hidden epics and were split into smaller tasks before the sprint started.</p>
+    </div>
+    <div class="stat">
+      <span class="label">Planning time</span>
+      <span class="stat-value">15–20%</span>
+      <p>less time on Planning Poker discussions of routine tasks, as estimated by the team, which relied more on the tool's suggested size.</p>
     </div>
   </div>
-  <p class="hint">All numbers elsewhere on this site come from the public Deep-SE data, not from the team's tasks.</p>
+  <p class="hint">Reported from an internal pilot during my internship. The team's tasks are confidential, so these numbers cannot be reproduced from this repository. All other numbers on this site come from the public Deep-SE data.</p>
 </section>
 
 <footer class="site-footer">
