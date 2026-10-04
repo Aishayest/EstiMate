@@ -103,14 +103,17 @@ def summary(df, bundle):
             "coverage": coverage,
             "drift": bool((iv.coverage < iv.index - DRIFT_GAP).any()),
         }
-    at90 = [p["coverage"]["90"] for p in projects.values()]
+    # Overall numbers from per-issue predictions, so they are not means of rounded values.
+    preds = pd.read_csv(config.RESULTS_DIR / "final_test_predictions.csv")
+    covered = (preds.storypoint >= preds["lo_90%"]) & (preds.storypoint <= preds["hi_90%"])
+    per_project = preds.assign(covered=covered, width=preds["hi_90%"] - preds["lo_90%"]).groupby("project")
     return {
         "method": "TF-IDF + Ridge, split conformal",
         "n_issues": int(len(df)),
         "projects": projects,
         "overall": {
-            "coverage_90": round(float(np.mean([c["coverage"] for c in at90])), 4),
-            "mean_width_90": round(float(np.mean([c["mean_width"] for c in at90])), 2),
+            "coverage_90": round(float(per_project.covered.mean().mean()), 4),
+            "mean_width_90": round(float(per_project.width.mean().mean()), 2),
         },
     }
 
