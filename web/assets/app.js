@@ -37,7 +37,17 @@
           if (!r.ok) throw new Error(project + ".json: HTTP " + r.status);
           return r.json();
         })
-        .then(Estimator.prepare);
+        .then(Estimator.prepare)
+        .then(function (model) {
+          // Show readable examples first: a short description, not a pasted log.
+          var readable = function (e) {
+            var n = e.title.length + e.description.length;
+            return n >= 80 && n <= 500;
+          };
+          model.examples = model.examples.filter(readable)
+            .concat(model.examples.filter(function (e) { return !readable(e); }));
+          return model;
+        });
     }
     return models[project];
   }
@@ -151,7 +161,7 @@
     $("point-unit").textContent = point === 1 ? "point" : "points";
     $("interval").textContent = range(r.loInt, r.hiInt);
     $("interval-sub").textContent = "Built to catch the team's real size in " + OUT_OF[state.level] +
-      " tasks. Exact guess: " + r.point.toFixed(1) + ".";
+      " tasks. Exact guess: " + r.point.toFixed(2) + ".";
     renderAxis(r);
     renderBadge();
     renderTruth(r);
